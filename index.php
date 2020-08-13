@@ -5,8 +5,8 @@
         <link rel="stylesheet" href="/css/header.css">
         <link rel="stylesheet" href="/css/index.css">
         <?php
-            require("func/func.php");
-            require("func/conn.php"); 
+            require(__DIR__ . "/func/func.php");
+            require(__DIR__ . "/func/conn.php"); 
 
             if(isset($_GET['id'])) {
                 $stmt = $conn->prepare("SELECT * FROM users WHERE id = ?");
@@ -18,18 +18,28 @@
                     $username = $row['username'];
                     $id = $row['id'];
                     $date = $row['date'];
+                    $currentgroup = $row['currentgroup'];
                     $bio = $row['bio'];
                     $css = $row['css'];
                     $pfp = htmlspecialchars($row['pfp']);
                     $rank = $row['rank'];
                     $badges = explode(';', $row['badges']);
+                    $currentgroup = $row['currentgroup'];
                     $music = $row['music'];
                     echo '<style>' . $css . '</style>';
-                    echo '<meta property="og:title" content="' . $username . '" />';
+                    echo '<meta property="og:title" content="' . $username . ' \'s 4Grounds profile" />';
                     echo '<meta property="og:description" content="' . htmlspecialchars($bio) . '" />';
                     echo '<meta property="og:image" content="https://spacemy.xyz/pfp/' . $pfp . '" />';
-                    echo '<meta property="og:site_name" content="4grounds.spacemy.xyz" />';
+                }
+                $stmt->close();
 
+                $stmt = $conn->prepare("SELECT * FROM `groups` WHERE id = ?");
+                $stmt->bind_param("i", $currentgroup);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                if($result->num_rows === 0) echo('There are no users.');
+                while($row = $result->fetch_assoc()) {
+                    $grouptitle = $row['title'];
                 }
                 $stmt->close();
 
@@ -65,12 +75,18 @@
                     $filesuploaded++;
                 }
                 $stmt->close();
+            } else {
+                echo '<meta property="og:title" content="Hub" />'; // PHP can suck a dick - bloxxite (f)
+                echo '<meta property="og:description" content="4Grounds is an open-source newgrounds revival." />';
+                echo '<meta name="twitter:card" content="https://spacemy.xyz/static/logo.png" />';
             }
         ?>
         <title>4Grounds - Hub</title>
+        <meta name="theme-color" content="#8b0000">
+        <meta content="4Grounds" property="og:site_name">
     </head>
     <body> 
-        <?php require("important/header.php"); ?>
+        <?php require(__DIR__ . "/important/header.php"); ?>
         
         <div class="container">
             <br>   
@@ -84,7 +100,8 @@
                 $stmt = $conn->prepare("INSERT INTO `comments` (toid, author, text) VALUES (?, ?, ?)");
                 $stmt->bind_param("sss", $_GET['id'], $_SESSION['user'], $text);
                 $unprocessedText = replaceBBcodes($_POST['comment']);
-                $text = str_replace(PHP_EOL, "<br>", $unprocessedText);
+//                $text = str_replace(PHP_EOL, "<br>", $unprocessedText);
+                $text = $_POST['comment'];
                 $stmt->execute();
                 $stmt->close();
             }
@@ -104,6 +121,7 @@
                             <span style="color: gold;">ID:</span> <?php echo $id;?><br>
                             <span style="color: gold;">Other Comments:</span> <?php echo $comments;?><br>
                             <span style="color: gold;">Profile Comments:</span> <?php echo $profilecomments;?><br>
+                            <span style="color: gold;">Current Group:</span> <?php echo $grouptitle;?><br>
                             <span style="color: gold;">Files Uploaded:</span> <?php echo $filesuploaded;?>
                         </div><br>
                         <?php if (!isset($_GET["ed"])) { ?>
@@ -116,9 +134,9 @@
                     <div class="notegray">
                     <?php if(isset($error)) { echo "<small style='color:red'>".$error."</small>"; } ?>
                     <h2>Comment</h2>
-                    <form method="post" enctype="multipart/form-data" id="submitform">
+                    <form method="post" enctype="multipart/form-data">
                         <textarea required cols="33" placeholder="Comment" name="comment"></textarea><br>
-                        <input type="submit" value="Post" class="g-recaptcha" data-sitekey="<?php echo CAPTCHA_SITEKEY; ?>" data-callback="onLogin"> <small>max limit: 500 characters | bbcode supported</small>
+                        <input type="submit" value="Post"> <small>max limit: 500 characters | bbcode supported</small>
                     </form>
                     </div> 
                     <center><br>
@@ -154,7 +172,7 @@
                     </div><br>
                     <div id="bio" class="notegray">
                         <h1>Bio</h1>
-                        <?php echo str_replace(PHP_EOL, "<br>", replaceBBcodes($bio)); ?>
+                        <?php echo validateMarkdown($bio); ?>
                     </div><br><br>
                     <div id='comments'>
                         <?php
@@ -168,7 +186,7 @@
                                     <div style="word-wrap: break-word;">
                                         <small><?php echo $row['date']; ?></small>
                                         <br>
-                                        <?php echo $row['text']; ?>
+                                        <?php echo validateMarkdown($row['text']); ?>
                                     </div>
                                     <div>
                                         <a style='float: right;' href='?id=<?php echo getID($row['author'], $conn); ?>'><?php echo $row['author']; ?></a>

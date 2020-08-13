@@ -4,8 +4,8 @@
         <link rel="stylesheet" href="/css/global.css">
         <link rel="stylesheet" href="/css/header.css">
         <?php
-            require("func/func.php");
-            require("func/conn.php"); 
+            require(__DIR__ . "/func/func.php");
+            require(__DIR__ . "/func/conn.php"); 
 
             if(isset($_GET['id'])) {
                 $stmt = $conn->prepare("SELECT * FROM files WHERE id = ?");
@@ -33,7 +33,7 @@
         <title>4Grounds - Hub</title>
     </head>
     <body> 
-        <?php require("important/header.php"); ?>
+        <?php require(__DIR__ . "/important/header.php"); ?>
         
         <div class="container">
             <?php
@@ -46,7 +46,8 @@
                     $stmt = $conn->prepare("INSERT INTO `gamecomments` (toid, author, text, date) VALUES (?, ?, ?, now())");
                     $stmt->bind_param("sss", $_GET['id'], $_SESSION['user'], $text);
                     $unprocessedText = replaceBBcodes($_POST['comment']);
-                    $text = str_replace(PHP_EOL, "<br>", $unprocessedText);
+//                    $text = str_replace(PHP_EOL, "<br>", $unprocessedText);
+                    $text = $_POST['comment'];
                     $stmt->execute();
                     $stmt->close();
                 }
@@ -231,8 +232,7 @@
                     </div>
                     <div style="word-wrap: break-word;">
                         <small><?php echo $row['date']; ?></small>
-                        <br>
-                        <?php echo $row['text']; ?>
+                        <?php echo validateMarkdown($row['text']);?>
                     </div>
                 </div>
                 <?php } ?>
