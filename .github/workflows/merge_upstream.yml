@@ -28,7 +28,7 @@ jobs:
 
           # Neither forget the -b opt,
           # the master ref is ambiguous at this stage
-          git checkout -b master origin/master
+          git checkout origin/master
           git merge --no-edit upstream/master
           git push origin master
 
