@@ -1,4 +1,6 @@
 <?php
+    define("CAPTCHA_PRIVATEKEY", "");
+    define("CAPTCHA_SITEKEY", "");
 
     $SERVER = "localhost";
     $USER   = "root";
@@ -21,4 +23,4 @@
     }
 
     error_reporting($lasterr);
-?>
+

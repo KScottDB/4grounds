@@ -13,23 +13,24 @@
                 $stmt->bind_param("i", $_GET['id']);
                 $stmt->execute();
                 $result = $stmt->get_result();
-                if($result->num_rows === 0) echo('There are no users.');
-                while($row = $result->fetch_assoc()) {
-                    $username = $row['username'];
-                    $id = $row['id'];
-                    $date = $row['date'];
-                    $currentgroup = $row['currentgroup'];
-                    $bio = $row['bio'];
-                    $css = $row['css'];
-                    $pfp = htmlspecialchars($row['pfp']);
-                    $rank = $row['rank'];
-                    $badges = explode(';', $row['badges']);
-                    $currentgroup = $row['currentgroup'];
-                    $music = $row['music'];
-                    echo '<style>' . $css . '</style>';
-                    echo '<meta property="og:title" content="' . $username . ' \'s 4Grounds profile" />';
-                    echo '<meta property="og:description" content="' . htmlspecialchars($bio) . '" />';
-                    echo '<meta property="og:image" content="https://spacemy.xyz/pfp/' . $pfp . '" />';
+                if($result->num_rows !== 0){ // echo('There are no users.'); // please just refuse to give a user if this is the case
+                    while($row = $result->fetch_assoc()) { // you dont need to use a loop if its only ever gonna return 1 or 0
+                        $username = $row['username']; // you dont actually need all of these variables oh my god just use an array
+                        $id = $row['id'];
+                        $date = $row['date'];
+                        $currentgroup = $row['currentgroup'];
+                        $bio = $row['bio'];
+                        $css = $row['css'];
+                        $pfp = htmlspecialchars($row['pfp']);
+                        $rank = $row['rank'];
+                        $badges = explode(';', $row['badges']);
+                        $currentgroup = $row['currentgroup'];
+                        $music = $row['music'];
+                        echo '<style>' . $css . '</style>';
+                        echo '<meta property="og:title" content="' . $username . ' \'s 4Grounds profile" />';
+                        echo '<meta property="og:description" content="' . htmlspecialchars($bio) . '" />';
+                        echo '<meta property="og:image" content="https://spacemy.xyz/pfp/' . $pfp . '" />';
+                    }
                 }
                 $stmt->close();
 
@@ -37,9 +38,12 @@
                 $stmt->bind_param("i", $currentgroup);
                 $stmt->execute();
                 $result = $stmt->get_result();
-                if($result->num_rows === 0) echo('There are no users.');
-                while($row = $result->fetch_assoc()) {
-                    $grouptitle = $row['title'];
+                if($result->num_rows !== 0){ //echo('There are no users.'); // why again
+                    while($row = $result->fetch_assoc()) {
+                        $grouptitle = $row['title'];
+                    }
+                }else{
+                    $grouptitle = "none";
                 }
                 $stmt->close();
 
@@ -107,13 +111,13 @@
             }
             skipcomment:
 
-            if(isset($_GET['id'])) {?>
+            if(isset($id)) {?>
                 <div id="groundtext"><center><h1><?php echo $username; ?>'s Ground</h1></center></div>
                 <div class="leftHalf">
                     <div class="notegray">
                         <center>
                         <br>
-                        <img style="border: 1px solid white; width: 15em;" src="pfp/<?php echo $pfp; ?>">
+                        <img style="border: 1px solid white; width: 15em;" src="/pfp/<?php echo $pfp; ?>">
                         </center>
                         <hr style="border-top: 1px dashed gray;">
                         <div id="userinfo" style="padding-left: 20px;">
@@ -126,7 +130,7 @@
                         </div><br>
                         <?php if (!isset($_GET["ed"])) { ?>
                             <audio autoplay controls>
-                                <source src="music/<?php echo $music; ?>">
+                                <source src="/music/<?php echo $music; ?>">
                             </audio> 
                         <?php } ?>
                     </div>
@@ -136,7 +140,7 @@
                     <h2>Comment</h2>
                     <form method="post" enctype="multipart/form-data">
                         <textarea required cols="33" placeholder="Comment" name="comment"></textarea><br>
-                        <input type="submit" value="Post"> <small>max limit: 500 characters | bbcode supported</small>
+                        <input type="submit" value="Post"> <small>max limit: 500 characters | supports <a href="https://www.markdownguide.org/basic-syntax">Markdown</a></small>
                     </form>
                     </div> 
                     <center><br>
@@ -167,7 +171,7 @@
                         if($result->num_rows > 0) echo('<h1>Files</h1>');
                         
                         while($row = $result->fetch_assoc()) { 
-                            echo '<a href="view.php?id=' . $row['id'] . '">' . $row['title'] . ' [' , $row['type'] . ']</a><br>';
+                            echo '<a href="/view?id=' . $row['id'] . '">' . $row['title'] . ' [' , $row['type'] . ']</a><br>';
                         }?> 
                     </div><br>
                     <div id="bio" class="notegray">
@@ -189,9 +193,9 @@
                                         <?php echo validateMarkdown($row['text']); ?>
                                     </div>
                                     <div>
-                                        <a style='float: right;' href='?id=<?php echo getID($row['author'], $conn); ?>'><?php echo $row['author']; ?></a>
+                                        <a style='float: right;' href='/?id=<?php echo getID($row['author'], $conn); ?>'><?php echo $row['author']; ?></a>
                                         <br>
-                                        <img class='commentPictures' style='float: right;' height='80px;'width='80px;'src='pfp/<?php echo getPFP($row['author'], $conn); ?>'>
+                                        <img class='commentPictures' style='float: right;' height='80px;'width='80px;'src='/pfp/<?php echo getPFP($row['author'], $conn); ?>'>
                                     </div>
                                 </div>
                         <?php } ?>
@@ -203,19 +207,19 @@
                 <div class="note" style="background-color: #202020;">
                     <h1>4Grounds - Hub</h1>
                     <a href="https://discord.gg/4YVGbND">Join Our Discord</a><br>
-                    <a href="newnews.php">Make a News Post</a><br>
-                    <a href="newreview.php">Make a Review Post</a><hr>
-                    <a href="uploadmidi.php">Upload MIDI</a><br>
-                    <a href="uploadmusic.php">Upload Song</a><br>
-                    <a href="uploadgame.php">Upload Game</a><br>
-                    <a href="uploadanimation.php">Upload Video</a><br>
-                    <a href="uploadart.php">Upload Image</a><br>
-                    <a href="uploadchiptune.php">Upload a Chiptune</a>
+                    <a href="/newnews">Make a News Post</a><br>
+                    <a href="/newreview">Make a Review Post</a><hr>
+                    <a href="/uploadmidi">Upload MIDI</a><br>
+                    <a href="/uploadmusic">Upload Song</a><br>
+                    <a href="/uploadgame">Upload Game</a><br>
+                    <a href="/uploadanimation">Upload Video</a><br>
+                    <a href="/uploadart">Upload Image</a><br>
+                    <a href="/uploadchiptune">Upload a Chiptune</a>
                     <hr>
 
-                    <a href="media.php">Featured</a><br>
+                    <a href="/media">Featured</a><br>
                     <?php 
-                    if(isset($_SESSION['user'])) { echo "<a href='home.php'>Manage</a><br><a href='files.php'>Files<a>"; }
+                    if(isset($_SESSION['user'])) { echo "<a href='/home'>Manage</a><br><a href='/files'>Files<a>"; }
                     ?>
                 </div>
                 <br>
@@ -226,10 +230,10 @@
                         $stmt->execute();
                         $result = $stmt->get_result();
                         while($row = $result->fetch_assoc()) {
-                            echo "<br><img style='height: 5em;position: absolute;border: 1px solid white; width: 5em;' src='pfp/" . getPFP($row['author'], $conn) . "'>
+                            echo "<br><img style='height: 5em;position: absolute;border: 1px solid white; width: 5em;' src='/pfp/" . getPFP($row['author'], $conn) . "'>
                             <small>
-                            <a href='view.php?id=" . $row['id'] . "'><span style='float:right;color: gold;'><i>[" . $row['agerating'] . "] " . $row['title'] . "</a></i></span><br>
-                            <span style='float:right;'><small><i>Posted by <a href='index.php?id=" . getID($row['author'], $conn) . "'>" . $row['author'] . "</a></i></span><br>
+                            <a href='/view?id=" . $row['id'] . "'><span style='float:right;color: gold;'><i>[" . $row['agerating'] . "] " . $row['title'] . "</a></i></span><br>
+                            <span style='float:right;'><small><i>Posted by <a href='/?id=" . getID($row['author'], $conn) . "'>" . $row['author'] . "</a></i></span><br>
                             <span style='float:right;'>" . $row['date'] . "</small></span><br>
                             <br><br>" . $row['extrainfo'] . "</small><hr>";
                         }
@@ -242,10 +246,10 @@
                         $stmt->execute();
                         $result = $stmt->get_result();
                         while($row = $result->fetch_assoc()) {
-                            echo "<br><img style='height: 5em;position: absolute;border: 1px solid white; width: 5em;' src='pfp/" . getPFP($row['author'], $conn) . "'>
+                            echo "<br><img style='height: 5em;position: absolute;border: 1px solid white; width: 5em;' src='/pfp/" . getPFP($row['author'], $conn) . "'>
                             <small>
-                            <a href='view.php?id=" . $row['id'] . "'><span style='float:right;color: gold;'>[" . $row['agerating'] . "] <i>" . $row['title'] . "</a></i></span><br>
-                            <span style='float:right;'><small><i>Posted by <a href='index.php?id=" . getID($row['author'], $conn) . "'>" . $row['author'] . "</a></i></span><br>
+                            <a href='/view?id=" . $row['id'] . "'><span style='float:right;color: gold;'>[" . $row['agerating'] . "] <i>" . $row['title'] . "</a></i></span><br>
+                            <span style='float:right;'><small><i>Posted by <a href='/?id=" . getID($row['author'], $conn) . "'>" . $row['author'] . "</a></i></span><br>
                             <span style='float:right;'>" . $row['date'] . "</small></span><br>
                             <br><br>" . $row['extrainfo'] . "</small><hr>";
                         }
@@ -260,7 +264,7 @@
                             if($result->num_rows === 0) echo('There are no users.');
                             while($row = $result->fetch_assoc()) {
                                 $id = 1;
-                                echo "<div class='item" . $id . "'><img style='height: 8em;width: 8em;' src='pfp/" . getPFP($row['username'], $conn) . "'><br><a href='?id=" . $row['id'] . "'>" . $row['username'] . "</a></div>";
+                                echo "<div class='item" . $id . "'><img style='height: 8em;width: 8em;' src='/pfp/" . getPFP($row['username'], $conn) . "'><br><a href='/?id=" . $row['id'] . "'>" . $row['username'] . "</a></div>";
                                 $id = $id + 1;
                             }
                             $stmt->close();
@@ -272,13 +276,12 @@
                 <div class="note" style='background-color: #404040;'>
                     <h1>Images</h1>
                     <?php
-                    //<a href="view.php?id=3">hhgregginspace PLUS! by <b>worldcash</b></a><br>
                     $stmt = $conn->prepare("SELECT * FROM files WHERE type='image' AND status='y' ORDER BY RAND() LIMIT 6");
                     $stmt->execute();
                     $result = $stmt->get_result();
                     while($row = $result->fetch_assoc()) {
                         echo "<div style='display: inline-block;' class='notegray'>
-                            <a href='view.php?id=" . $row['id'] . "'><img style='width: 7.5em;height: 7.5em;' src='images/" . $row['filename'] . "'>
+                            <a href='/view?id=" . $row['id'] . "'><img style='width: 7.5em;height: 7.5em;' src='/images/" . $row['filename'] . "'>
                             <br><center><b>" . htmlspecialchars($row['title']) . "</b><br><span style='color: gray;'>By " . $row['author'] . "</span></center>
                             </a>
                         </div> ";  

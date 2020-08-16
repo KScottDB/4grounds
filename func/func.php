@@ -1,11 +1,10 @@
 <script type='text/javascript' src='//www.midijs.net/lib/midi.js'></script>
 <?php
-require(__DIR__ . "/bbcode.php");
 require(__DIR__ . "/../vendor/autoload.php");
 
 define("DEBUG_MODE", true);
 session_start();
-if(DEBUG_MODE == true) {
+if(defined("DEBUG_MODE") && DEBUG_MODE) {
     ini_set('display_errors', 1);
     ini_set('display_startup_errors', 1);
     error_reporting(E_ALL);
@@ -19,7 +18,7 @@ function validateCSS($validate) {
 }
 function validateMarkdown($comment) {
 	$markdown = new Michelf\Markdown;
-	$markdown->no_markup = "true";
+	$markdown->no_markup = true;
 	$transformed = $markdown->transform($comment);
 	return preg_replace(
 		"/<a href=(?:'|\")javascript:(.*?)(?:'|\")>(.*?)<\/a>/i",
@@ -88,60 +87,57 @@ function checkIfFriended($friend1, $friend2, $connection)
 	return false;
 }
 
-//thanks dzhaugasharov https://gist.github.com/afsalrahim/bc8caf497a4b54c5d75d
-function replaceBBcodes($text) {
-	return bbcode_to_html($text);
-}
-
-function getUser($id) {
-	$stmt = $conn->prepare("SELECT * FROM users WHERE id = ?");
+function getUser($id, $connection) {
+	$userResult = array();
+	$stmt = $connection->prepare("SELECT * FROM users WHERE id = ?");
 	$stmt->bind_param("i", $id);
 	$stmt->execute();
 	$result = $stmt->get_result();
 	if($result->num_rows === 0) echo('That user does not exist.');
 	while($row = $result->fetch_assoc()) {
-		$username = $row['username'];
-		$id = $row['id'];
-		$date = $row['date'];
-		$bio = $row['bio'];
-		$css = $row['css'];
-		$pfp = $row['pfp'];
-		$badges = explode(';', $row['badges']);
-		$music = $row['music'];
+		$userResult['username'] = $row['username'];
+		$userResult['id'] = $row['id'];
+		$userResult['date'] = $row['date'];
+		$userResult['bio'] = $row['bio'];
+		$userResult['css'] = $row['css'];
+		$userResult['pfp'] = $row['pfp'];
+		$userResult['badges'] = explode(';', $row['badges']);
+		$userResult['music'] = $row['music'];
 	}
 	$stmt->close();
 
-	$stmt = $conn->prepare("SELECT * FROM gamecomments WHERE author = ?");
-	$stmt->bind_param("s", $username);
+	$stmt = $connection->prepare("SELECT * FROM gamecomments WHERE author = ?");
+	$stmt->bind_param("s", $userResult['username']);
 	$stmt->execute();
 	$result = $stmt->get_result();
 
-	$comments = 0;
+	$userResult['comments'] = 0;
 	while($row = $result->fetch_assoc()) {
-		$comments++;
+		$userResult['comments']++;
 	}
 	$stmt->close();
 
-	$stmt = $conn->prepare("SELECT * FROM comments WHERE author = ?");
-	$stmt->bind_param("s", $username);
+	$stmt = $connection->prepare("SELECT * FROM comments WHERE author = ?");
+	$stmt->bind_param("s", $userResult['username']);
 	$stmt->execute();
 	$result = $stmt->get_result();
 
-	$profilecomments = 0;
+	$userResult['profilecomments'] = 0;
 	while($row = $result->fetch_assoc()) {
-		$profilecomments++;
+		$userResult['profilecomments']++;
 	}
 	$stmt->close();
 
-	$stmt = $conn->prepare("SELECT * FROM files WHERE author = ? AND status='y'");
-	$stmt->bind_param("s", $username);
+	$stmt = $connection->prepare("SELECT * FROM files WHERE author = ? AND status='y'");
+	$stmt->bind_param("s", $userResult['username']);
 	$stmt->execute();
 	$result = $stmt->get_result();
 
-	$filesuploaded = 0;
+	$userResult['filesuploaded'] = 0;
 	while($row = $result->fetch_assoc()) {
-		$filesuploaded++;
+		$userResult['filesuploaded']++;
 	}
 	$stmt->close();
+	return $userResult;
 }
 ?>

@@ -42,11 +42,11 @@
                     if(!isset($_SESSION['user'])){ $error = "you are not logged in"; goto skipcomment; }
                     if(!$_POST['comment']){ $error = "your comment cannot be blank"; goto skipcomment; }
                     if(strlen($_POST['comment']) > 500){ $error = "your comment must be shorter than 500 characters"; goto skipcomment; }
+                    if(!isset($_POST['g-recaptcha-response'])) { $error = "captcha validation failed"; goto skipcomment; }
+                    if(!validateCaptcha(CAPTCHA_PRIVATEKEY, $_POST['g-recaptcha-response'])) { $error = "captcha validation failed"; goto skipcomment; }
 
                     $stmt = $conn->prepare("INSERT INTO `gamecomments` (toid, author, text, date) VALUES (?, ?, ?, now())");
                     $stmt->bind_param("sss", $_GET['id'], $_SESSION['user'], $text);
-                    $unprocessedText = replaceBBcodes($_POST['comment']);
-//                    $text = str_replace(PHP_EOL, "<br>", $unprocessedText);
                     $text = $_POST['comment'];
                     $stmt->execute();
                     $stmt->close();
@@ -58,7 +58,7 @@
 
                 echo "<br><img style='position: absolute;border: 1px solid white; width: 5em;' src='pfp/" . getPFP($author, $conn) . "'>
                 <small>
-                <a href='view.php?id=" . $id . "'><span style='float:right;color: gold;'><i>" . $title . "</a></i></span><br>
+                <a href='/view?id=" . $id . "'><span style='float:right;color: gold;'><i>" . $title . "</a></i></span><br>
                 <span style='float:right;'><small><i>Posted by <a href='index.php?id=" . getID($author, $conn) . "'>" . $author . "</a></i></span><br>
                 <span style='float:right;'>" . $date . "</small></span><br>
                 <br><br>" . $extrainfo . "</small><hr>";
@@ -66,13 +66,13 @@
             <?php 
             if($type == "song") {
                 echo '<audio controls>
-                <source src="musicfiles/' . $filename . '">
+                <source src="/musicfiles/' . $filename . '">
                 </audio>';
             } else if($type == "image") {
-              echo "<img style='width: 10em;height: 10em;' src='images/" . $filename . "'>";
+              echo "<img style='max-width: 100%;' src='/images/" . $filename . "'>";
             } else if($type == "midi") {
                 echo "Note: It may take a few seconds for the MIDI to load.<br>";
-                echo "<a href='#' onClick=\"MIDIjs.play('midis/" . $filename . "');\">Play " . $title . "</a>";
+                echo "<a href='#' onClick=\"MIDIjs.play('/midis/" . $filename . "');\">Play " . $title . "</a>";
                 echo "<br><a href='#' onClick='MIDIjs.stop();'>Stop MIDI Playback</a>";
             } else if($type == "chiptune") {
                 //the way i did this absolutely sucks and im
@@ -200,21 +200,21 @@
             </script>
             <script type="text/javascript" src="//cdn.jsdelivr.net/gh/deskjet/chiptune2.js@master/libopenmpt.js"></script>
             <script type="text/javascript" src="//cdn.jsdelivr.net/gh/deskjet/chiptune2.js@master/chiptune2.js"></script>';
-            echo '<a class="song" data-modurl="midis/' . $filename . '" href="#">Play ' . $title . '</a>';
+            echo '<a class="song" data-modurl="/midis/' . $filename . '" href="#">Play ' . $title . '</a>';
             } else if($type == "news" || $type == "review") {
               //do nothing
             } else if($type == "video") {
               echo ' <video width="640" height="400" controls>
-                  <source src="videos/' . $filename . '" type="video/mp4">
+                  <source src="/videos/' . $filename . '" type="video/mp4">
                 </video> ';
             } else {
-                echo '<embed src="gamefiles/' . $filename . '"  height="300px" width="500px"> </embed>';
+                echo '<embed src="/gamefiles/' . $filename . '"  height="300px" width="500px"> </embed>';
             }
             ?>
             <h2>User Submitted Comments</h2>
             <form method="post" enctype="multipart/form-data" id="submitform">
                 <textarea required cols="77" placeholder="Comment" name="comment"></textarea><br>
-                <input type="submit" value="Post" class="g-recaptcha" data-sitekey="<?php echo CAPTCHA_SITEKEY; ?>" data-callback="onLogin"> <small>max limit: 500 characters | bbcode supported</small>
+                <input type="submit" value="Post" class="g-recaptcha" data-sitekey="<?php echo CAPTCHA_SITEKEY; ?>" data-callback="onSubmit"> <small>max limit: 500 characters | supports <a href="https://www.markdownguide.org/basic-syntax">Markdown</a></small>
             </form>
             <?php
                 $stmt = $conn->prepare("SELECT * FROM `gamecomments` WHERE toid = ? ORDER BY id DESC");
@@ -226,7 +226,7 @@
                 <?php while($row = $result->fetch_assoc()) { ?>
                 <div class='commentRight' style='display: grid; grid-template-columns: auto 85%; padding:5px;'>
                     <div>
-                        <a style='float: left;' href='/index.php?id=<?php echo getID($row['author'], $conn); ?>'><?php echo $row['author']; ?></a>
+                        <a style='float: left;' href='/?id=<?php echo getID($row['author'], $conn); ?>'><?php echo $row['author']; ?></a>
                         <br>
                         <img class='commentPictures' style='float: left;' height='80px;'width='80px;'src='/pfp/<?php echo getPFP($row['author'], $conn); ?>'>
                     </div>
@@ -238,5 +238,10 @@
                 <?php } ?>
             </div>
         </div>
+        <script>
+            function onSubmit(token) {
+                document.getElementById("submitform").submit();
+            }
+        </script>
     </body>
 </html>
